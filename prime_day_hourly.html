@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prime Day Reporting — Hourly Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090d;--card:#0e1219;--card2:#11161f;--border:#1a2840;--text:#e4eaf4;--sub:#8da4c2;--dim:#4a6585;
+--lime:#a3e635;--cyan:#00d4ff;--gold:#fbbf24;--red:#ef4444;--teal:#2dd4bf;
+--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.page{max-width:1240px;margin:0 auto;padding:32px 22px 80px;}
+.hero{border:1px solid var(--border);background:linear-gradient(135deg,#0c1119,#0a0e15);border-radius:18px;padding:34px 32px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--lime),var(--cyan));}
+.hero-tag{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+h1{font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1.1;}
+h1 em{font-style:normal;color:var(--gold);}
+.hero-dates{font-family:var(--mono);font-size:13px;color:var(--sub);margin-top:14px;}
+.hero-dates b{color:var(--lime);}.hero-dates .prev{color:var(--cyan);}
+.pills{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;}
+.pill{font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);color:var(--sub);background:rgba(255,255,255,0.02);}
+.pill.warn{border-color:rgba(251,191,36,0.4);color:var(--gold);}
+.pill.flag{border-color:rgba(239,68,68,0.35);color:#f7a3a3;}
+.section{margin-top:34px;}
+.sec-head{margin-bottom:18px;}
+.sec-num{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
+.sec-title{font-size:20px;font-weight:600;margin-top:4px;letter-spacing:-0.3px;}
+.sec-sub{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:4px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.kpi-grid{grid-template-columns:1fr;}}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 16px 14px;position:relative;overflow:hidden;}
+.kpi .glow{position:absolute;top:0;left:0;width:46px;height:3px;border-radius:0 0 4px 0;}
+.kpi.hero-kpi{grid-column:span 2;background:linear-gradient(135deg,#0d1620,#0a1015);border-color:rgba(45,212,191,0.3);}
+@media(max-width:520px){.kpi.hero-kpi{grid-column:span 1;}}
+.kpi-label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.kpi-val{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1.1;}
+.kpi.hero-kpi .kpi-val{font-size:30px;}
+.kpi-prev{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400;}
+.kpi-delta{font-family:var(--mono);font-size:11px;margin-top:7px;font-weight:600;}
+.kpi-delta.pos{color:var(--lime);}.kpi-delta.neg{color:var(--red);}.kpi-delta.neu{color:var(--sub);}
+.kpi-note{font-family:var(--sans);font-size:10.5px;color:var(--gold);margin-top:6px;line-height:1.35;}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;}
+.chart-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;}
+.chart-head h3{font-size:14px;font-weight:600;color:#fff;}
+select.metric-sel{font-family:var(--mono);font-size:12px;background:var(--card2);color:var(--lime);border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer;}
+.canvas-wrap{position:relative;width:100%;height:340px;}
+.canvas-wrap.short{height:280px;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+.voice{font-family:var(--sans);font-size:13px;color:var(--sub);margin-top:14px;padding:11px 16px;background:rgba(255,255,255,0.02);border-radius:8px;border-left:3px solid var(--gold);line-height:1.55;}
+.voice b{color:#fff;font-weight:600;}.voice .up{color:var(--lime);font-weight:600;}.voice .dn{color:var(--red);font-weight:600;}
+.funnel-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:760px){.funnel-grid{grid-template-columns:1fr;}}
+.funnel-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.funnel-card h4{font-family:var(--mono);font-size:12px;letter-spacing:1px;margin-bottom:14px;}
+.fn-stage{margin-bottom:12px;}
+.fn-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:4px;}
+.fn-row .nm{color:var(--sub);}.fn-row .vl{color:#fff;font-weight:600;}
+.fn-bar{height:9px;border-radius:5px;background:rgba(255,255,255,0.05);overflow:hidden;}
+.fn-bar span{display:block;height:100%;border-radius:5px;}
+.fn-conv{font-family:var(--mono);font-size:10px;color:var(--gold);text-align:right;margin-top:3px;}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+table.sc{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;min-width:760px;}
+table.sc th{padding:10px 9px;color:var(--dim);font-weight:400;text-align:right;border-bottom:1px solid var(--border);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+table.sc th:first-child{text-align:left;}
+table.sc td{padding:8px 9px;text-align:right;border-bottom:1px solid rgba(26,40,64,0.35);white-space:nowrap;}
+table.sc td:first-child{text-align:left;color:#fff;font-weight:600;}
+table.sc tr:hover td{background:rgba(255,255,255,0.02);}
+table.sc tfoot td{border-top:1px solid var(--border);color:var(--gold);font-weight:700;}
+.tbl-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.tbl-tab{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--sub);cursor:pointer;}
+.tbl-tab.active{color:var(--bg);font-weight:700;}
+.tbl-tab.t2.active{background:var(--lime);border-color:var(--lime);}
+.tbl-tab.t1.active{background:var(--cyan);border-color:var(--cyan);}
+.dead{color:var(--dim);}
+.takeaways{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:14px;padding:30px;position:relative;overflow:hidden;}
+.takeaways::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--gold),var(--lime));}
+.tk-title{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:18px;}
+.tk-list{list-style:none;display:flex;flex-direction:column;gap:13px;}
+.tk-list li{font-size:14px;color:var(--text);line-height:1.6;padding-left:20px;position:relative;}
+.tk-list li::before{content:'→';position:absolute;left:0;color:var(--cyan);font-weight:700;}
+.tk-list li strong{color:var(--gold);}.tk-list li .up{color:var(--lime);font-weight:600;}.tk-list li .dn{color:var(--red);font-weight:600;}
+.legend{display:flex;gap:18px;font-family:var(--mono);font-size:11px;color:var(--sub);margin-top:8px;}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.foot{margin-top:40px;font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:center;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hero">
+  <div class="hero-tag">SmartSign USA · Seller Central · SP Ads + Total Sales</div>
+  <h1>Prime Day Reporting — <em>Hourly Analysis</em></h1>
+  <div class="hero-dates"><b>Tue 23 Jun 2026 · Prime Day 1</b> &nbsp;vs&nbsp; <span class="prev">Tue 16 Jun · last Tuesday</span> &nbsp;·&nbsp; Hourly, 12 AM – 11 PM</div>
+  <div class="pills">
+    <span class="pill">Ad metrics = SP only (caps apply to SP)</span>
+    <span class="pill">T-Sales = total business sales</span>
+    <span class="pill warn">Single-day Tue-vs-Tue read</span>
+    <span class="pill warn">Activity near-zero after ~3 PM on 6/23</span>
+    <span class="pill flag">Lower-is-worse metrics are NOT marked green when down</span>
+  </div>
+</div>
+
+<!-- 01 SCORECARD -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">01 — Scorecard</div>
+    <div class="sec-title">Full-day totals · 6/23 vs 6/16</div>
+    <div class="sec-sub">Arrow = direction of change · Colour = good (green) / bad (red), per metric</div>
+  </div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+</div>
+
+<!-- 02 METRIC EXPLORER -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">02 — Hourly Metric Explorer</div>
+    <div class="sec-title">Pick any metric · 6/23 vs 6/16, hour by hour</div>
+  </div>
+  <div class="panel">
+    <div class="chart-head">
+      <h3 id="expTitle"></h3>
+      <select class="metric-sel" id="metricSel"></select>
+    </div>
+    <div class="canvas-wrap"><canvas id="expCanvas"></canvas></div>
+    <div class="legend"><span><i style="background:#a3e635"></i>Tue 23 (PD1)</span><span><i style="background:#00d4ff"></i>Tue 16 (prev)</span></div>
+    <div class="voice" id="expVoice"></div>
+  </div>
+</div>
+
+<!-- 03 ROAS -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">03 — Hourly Ad ROAS</div>
+    <div class="sec-title">Ad Sales ÷ Ad Spend, per hour</div>
+    <div class="sec-sub">Hours with spend under $10 shown as no-data</div>
+  </div>
+  <div class="panel">
+    <div class="canvas-wrap short"><canvas id="roasCanvas"></canvas></div>
+    <div class="legend"><span><i style="background:#a3e635"></i>Tue 23 (PD1)</span><span><i style="background:#00d4ff"></i>Tue 16 (prev)</span></div>
+    <div class="voice" id="roasVoice"></div>
+  </div>
+</div>
+
+<!-- 04 FUNNEL -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">04 — Conversion Funnel</div>
+    <div class="sec-title">Impressions → Clicks → Purchases → Ad Sales</div>
+    <div class="sec-sub">Bars scaled within each day · CTR and CVR shown between stages</div>
+  </div>
+  <div class="funnel-grid" id="funnelGrid"></div>
+  <div class="voice" id="funnelVoice"></div>
+</div>
+
+<!-- 05 TABLE -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">05 — Full Hourly Breakdown</div>
+    <div class="sec-title">Every metric, every hour</div>
+  </div>
+  <div class="panel">
+    <div class="tbl-tabs">
+      <button class="tbl-tab t2 active" id="tabT2" onclick="setTable('d2')">Tue 23 (PD1)</button>
+      <button class="tbl-tab t1" id="tabT1" onclick="setTable('d1')">Tue 16 (prev)</button>
+    </div>
+    <div class="tbl-wrap"><table class="sc" id="hourTable"></table></div>
+  </div>
+</div>
+
+<!-- 06 TAKEAWAYS -->
+<div class="section">
+  <div class="takeaways">
+    <div class="tk-title">What it says</div>
+    <ul class="tk-list" id="tkList"></ul>
+  </div>
+</div>
+
+<div class="foot">
+  Prime Day Reporting — Hourly Analysis · Tue 23 Jun 2026 (PD1) vs Tue 16 Jun · SP ad metrics + total sales.<br>
+  Ad ROAS = Ad Sales ÷ Ad Spend · T-ROAS = T-Sales ÷ Ad Spend. T-Sales cross-checked to Compare Sales snapshot.
+</div>
+
+</div>
+<script>
+/* ===== DATA (24h, 0=12AM .. 23=11PM) ===== */
+var HOURS=['12 AM','1 AM','2 AM','3 AM','4 AM','5 AM','6 AM','7 AM','8 AM','9 AM','10 AM','11 AM','12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM','8 PM','9 PM','10 PM','11 PM'];
+var D={
+  d2:{label:'Tue 23 (PD1)',color:'#a3e635',ts:111739,
+    imp:[17668,21652,27246,47084,83704,128619,178770,207347,226073,227002,235543,235586,157990,40731,36734,17137,3608,3720,4100,2077,0,0,0,0],
+    clk:[54,104,113,169,323,502,766,818,905,939,981,941,642,254,209,113,9,7,9,6,0,0,0,0],
+    cost:[90,238,250,444,777,1482,2226,2506,2660,2524,2732,2438,1654,387,309,150,10,9,11,7,0,0,0,0],
+    pur:[5,13,9,19,36,105,119,143,147,156,175,152,112,36,21,24,0,0,1,0,0,0,0,0],
+    sal:[140,231,317,836,1397,3749,4597,6872,6316,7676,7115,5458,4089,1213,453,471,0,0,18,0,0,0,0,0],
+    ntb:[13,142,157,341,158,181,549,1380,774,462,733,762,684,713,228,289,0,0,0,0,0,0,0,0]},
+  d1:{label:'Tue 16 (prev)',color:'#00d4ff',ts:130150,
+    imp:[16340,16186,22213,39854,69987,112371,144816,179132,189715,198142,220796,228196,235119,212585,193481,173060,162318,148857,93606,40335,31528,23216,17310,9714],
+    clk:[51,81,109,179,275,470,626,763,781,864,969,1003,1027,881,826,785,721,647,398,192,158,101,77,50],
+    cost:[113,172,218,375,667,1328,1762,2235,2349,2402,2750,2569,2651,2189,1846,1650,1351,1126,695,253,188,135,89,44],
+    pur:[6,3,6,17,42,93,99,168,170,180,213,196,188,191,94,130,103,74,38,17,14,11,11,3],
+    sal:[169,71,145,532,1390,3570,4616,8312,6511,8046,9581,8184,7689,8343,5294,4019,5365,2000,1435,479,454,349,324,57],
+    ntb:[0,0,0,0,25,81,294,735,826,760,424,517,687,788,346,722,607,402,326,444,431,349,154,57]}
+};
+/* ===== HELPERS ===== */
+function sm(a){return a.reduce(function(x,y){return x+y;},0);}
+function money(v){return '$'+Math.round(v).toLocaleString();}
+function money2(v){return '$'+v.toFixed(2);}
+function num(v){return Math.round(v).toLocaleString();}
+function pctv(v){return v.toFixed(1)+'%';}
+function roasv(v){return v.toFixed(2)+'x';}
+function pctChg(c,p){return p?((c-p)/p*100):0;}
+/* Direction-aware class: good='up' means higher is better */
+function goodCls(cur,prev,good){if(!prev)return'neu';var up=cur>=prev;var isGood=good==='up'?up:!up;return isGood?'pos':'neg';}
+function arrow(cur,prev){return cur>=prev?'▲':'▼';}
+/* per-hour derived arrays */
+function hRoas(d){return d.cost.map(function(c,i){return c>10?d.sal[i]/c:0;});}
+function hCpc(d){return d.cost.map(function(c,i){return d.clk[i]>0?c/d.clk[i]:0;});}
+function hCvr(d){return d.pur.map(function(p,i){return d.clk[i]>0?p/d.clk[i]*100:0;});}
+function hCtr(d){return d.clk.map(function(c,i){return d.imp[i]>0?c/d.imp[i]*100:0;});}
+
+/* ===== 01 SCORECARD ===== */
+var d2=D.d2,d1=D.d1;
+function T(d){var I=sm(d.imp),C=sm(d.clk),Co=sm(d.cost),P=sm(d.pur),S=sm(d.sal),N=sm(d.ntb);
+  return {imp:I,clk:C,cost:Co,pur:P,sal:S,ntb:N,ts:d.ts,ctr:C/I*100,cpc:Co/C,cvr:P/C*100,aov:S/P,roas:S/Co,troas:d.ts/Co,ntbp:N/S*100};}
+var t2=T(d2),t1=T(d1);
+var KPIS=[
+  {k:'ts',label:'Total Sales (T-Sales)',accent:'--teal',good:'up',fmt:money,hero:true,note:'Total business sales for the day, all channels.'},
+  {k:'sal',label:'Ad Sales (SP)',accent:'--lime',good:'up',fmt:money},
+  {k:'cost',label:'Ad Spend (SP)',accent:'--cyan',good:'down',fmt:money},
+  {k:'roas',label:'Ad ROAS',accent:'--gold',good:'up',fmt:roasv},
+  {k:'troas',label:'T-ROAS',accent:'--teal',good:'up',fmt:roasv,note:'Up because spend fell ~28% while T-Sales held — denominator-driven, not a clean efficiency win.'},
+  {k:'imp',label:'Impressions',accent:'--cyan',good:'up',fmt:num},
+  {k:'clk',label:'Clicks',accent:'--lime',good:'up',fmt:num},
+  {k:'ctr',label:'CTR',accent:'--gold',good:'up',fmt:pctv},
+  {k:'cpc',label:'CPC',accent:'--cyan',good:'down',fmt:money2},
+  {k:'pur',label:'Purchases',accent:'--lime',good:'up',fmt:num},
+  {k:'cvr',label:'Conversion Rate',accent:'--gold',good:'up',fmt:pctv},
+  {k:'aov',label:'AOV',accent:'--teal',good:'up',fmt:money2},
+  {k:'ntb',label:'New-to-Brand Sales',accent:'--lime',good:'up',fmt:money},
+  {k:'ntbp',label:'NTB % of Ad Sales',accent:'--gold',good:'up',fmt:pctv,note:'Prime Day pulled a higher share of new customers.'}
+];
+(function(){
+  var html='';
+  KPIS.forEach(function(m){
+    var cur=t2[m.k],prev=t1[m.k];
+    var cls=goodCls(cur,prev,m.good);
+    var pc=pctChg(cur,prev);
+    html+='<div class="kpi'+(m.hero?' hero-kpi':'')+'"><div class="glow" style="background:var('+m.accent+')"></div>'+
+      '<div class="kpi-label">'+m.label+'</div>'+
+      '<div class="kpi-val" style="color:var('+m.accent+')">'+m.fmt(cur)+' <span class="kpi-prev">(prev '+m.fmt(prev)+')</span></div>'+
+      '<div class="kpi-delta '+cls+'">'+arrow(cur,prev)+' '+(pc>=0?'+':'')+pc.toFixed(1)+'% vs last Tue</div>'+
+      (m.note?'<div class="kpi-note">'+m.note+'</div>':'')+'</div>';
+  });
+  document.getElementById('kpiGrid').innerHTML=html;
+})();
+
+/* ===== GENERIC DUAL LINE CHART ===== */
+function lineChart(canvasId,a2,a1,fmtY,fmtTip,opt){
+  opt=opt||{};
+  var cv=document.getElementById(canvasId);if(!cv)return;
+  var dpr=window.devicePixelRatio||1,ctx=cv.getContext('2d');
+  var C2='#a3e635',C1='#00d4ff';
+  function render(){
+    var W=cv.offsetWidth,Ht=cv.offsetHeight;cv.width=W*dpr;cv.height=Ht*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+    var PL=58,PR=16,PT=18,PB=52,pW=W-PL-PR,pH=Ht-PT-PB,n=24;
+    var mx=Math.max.apply(null,a2.concat(a1))*1.12||1;
+    var xp=function(i){return PL+(i/(n-1))*pW;},yp=function(v){return PT+pH-(v/mx)*pH;};
+    ctx.clearRect(0,0,W,Ht);
+    for(var g=0;g<=4;g++){var v=(mx/4)*g,y=yp(v);ctx.strokeStyle='#1a2840';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(PL+pW,y);ctx.stroke();ctx.fillStyle='#4a6585';ctx.font='10px JetBrains Mono';ctx.textAlign='right';ctx.fillText(fmtY(v),PL-7,y+4);}
+    [[a1,C1,true],[a2,C2,false]].forEach(function(d){
+      var arr=d[0],col=d[1],dash=d[2];
+      ctx.beginPath();ctx.moveTo(xp(0),yp(arr[0]));for(var i=1;i<n;i++)ctx.lineTo(xp(i),yp(arr[i]));ctx.lineTo(xp(n-1),PT+pH);ctx.lineTo(xp(0),PT+pH);ctx.closePath();
+      var gr=ctx.createLinearGradient(0,PT,0,PT+pH);gr.addColorStop(0,col+'2e');gr.addColorStop(1,col+'00');ctx.fillStyle=gr;ctx.fill();
+      ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.setLineDash(dash?[6,4]:[]);ctx.moveTo(xp(0),yp(arr[0]));for(var j=1;j<n;j++)ctx.lineTo(xp(j),yp(arr[j]));ctx.stroke();ctx.setLineDash([]);
+      arr.forEach(function(v2,k){ctx.beginPath();ctx.arc(xp(k),yp(v2),2.4,0,7);ctx.fillStyle=col;ctx.fill();});
+    });
+    for(var i4=0;i4<n;i4+=2){ctx.fillStyle='#4a6585';ctx.font='9px JetBrains Mono';ctx.save();ctx.translate(xp(i4),PT+pH+10);ctx.rotate(-Math.PI/5);ctx.textAlign='right';ctx.fillText(HOURS[i4].replace(' ',''),0,0);ctx.restore();}
+    cv._s={W:W,Ht:Ht,PL:PL,pW:pW,PT:PT,pH:pH,mx:mx,xp:xp};
+  }
+  render();
+  cv.onmousemove=function(e){var s=cv._s;if(!s)return;var r=cv.getBoundingClientRect(),mx2=e.clientX-r.left,my=e.clientY-r.top;
+    if(mx2<s.PL||mx2>s.PL+s.pW||my<s.PT||my>s.PT+s.pH){render();return;}
+    var idx=Math.round(Math.max(0,Math.min(23,(mx2-s.PL)/s.pW*23)));render();
+    var x=s.PL+(idx/23)*s.pW;ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(x,s.PT);ctx.lineTo(x,s.PT+s.pH);ctx.stroke();ctx.setLineDash([]);
+    var lines=[HOURS[idx],'Tue 23: '+fmtTip(a2[idx]),'Tue 16: '+fmtTip(a1[idx])];
+    ctx.font='11px JetBrains Mono';var bW=Math.max.apply(null,lines.map(function(l){return ctx.measureText(l).width;}))+26,bH=lines.length*20+12;
+    var bx=x+12,by=Math.max(s.PT,my-bH/2);if(bx+bW>s.W-8)bx=x-bW-12;
+    ctx.fillStyle='#131a24';ctx.strokeStyle='#1a2840';ctx.lineWidth=1;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(bx,by,bW,bH,6);else ctx.rect(bx,by,bW,bH);ctx.fill();ctx.stroke();
+    var cols=['#fff','#a3e635','#00d4ff'];lines.forEach(function(l,i){ctx.fillStyle=cols[i];ctx.font=i===0?'bold 11px JetBrains Mono':'11px JetBrains Mono';ctx.textAlign='left';ctx.fillText(l,bx+13,by+17+i*20);});
+  };
+  cv.onmouseleave=render;window.addEventListener('resize',function(){setTimeout(render,60);});
+  cv._render=render;return cv;
+}
+
+/* ===== 02 EXPLORER ===== */
+var METRICS=[
+  {key:'sal',name:'Ad Sales ($)',good:'up',get:function(d){return d.sal;},fy:function(v){return v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+Math.round(v);},ft:money},
+  {key:'cost',name:'Ad Spend ($)',good:'down',get:function(d){return d.cost;},fy:function(v){return v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+Math.round(v);},ft:money},
+  {key:'imp',name:'Impressions',good:'up',get:function(d){return d.imp;},fy:function(v){return (v/1000).toFixed(0)+'k';},ft:num},
+  {key:'clk',name:'Clicks',good:'up',get:function(d){return d.clk;},fy:function(v){return Math.round(v);},ft:num},
+  {key:'pur',name:'Purchases',good:'up',get:function(d){return d.pur;},fy:function(v){return Math.round(v);},ft:num},
+  {key:'ntb',name:'New-to-Brand Sales ($)',good:'up',get:function(d){return d.ntb;},fy:function(v){return v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+Math.round(v);},ft:money},
+  {key:'roas',name:'Ad ROAS (x)',good:'up',get:hRoas,fy:function(v){return v.toFixed(1)+'x';},ft:roasv},
+  {key:'cvr',name:'Conversion Rate (%)',good:'up',get:hCvr,fy:function(v){return v.toFixed(0)+'%';},ft:pctv},
+  {key:'cpc',name:'CPC ($)',good:'down',get:hCpc,fy:function(v){return '$'+v.toFixed(1);},ft:money2},
+  {key:'ctr',name:'CTR (%)',good:'up',get:hCtr,fy:function(v){return v.toFixed(2)+'%';},ft:function(v){return v.toFixed(3)+'%';}}
+];
+(function(){var sel=document.getElementById('metricSel');METRICS.forEach(function(m,i){var o=document.createElement('option');o.value=i;o.textContent=m.name;sel.appendChild(o);});sel.onchange=function(){drawExplorer(+this.value);};})();
+function drawExplorer(i){
+  var m=METRICS[i];var a2=m.get(d2),a1=m.get(d1);
+  document.getElementById('expTitle').textContent=m.name+' · hourly';
+  lineChart('expCanvas',a2,a1,m.fy,m.ft);
+  // voice: totals + peak
+  var T2=m.key==='roas'?t2.roas:(m.key==='cvr'?t2.cvr:(m.key==='cpc'?t2.cpc:(m.key==='ctr'?t2.ctr:sm(a2))));
+  var T1=m.key==='roas'?t1.roas:(m.key==='cvr'?t1.cvr:(m.key==='cpc'?t1.cpc:(m.key==='ctr'?t1.ctr:sm(a1))));
+  var pk=0,pkh=0;a2.forEach(function(v,h){if(v>pk){pk=v;pkh=h;}});
+  var cls=goodCls(T2,T1,m.good);var word=cls==='pos'?'<span class="up">better</span>':(cls==='neg'?'<span class="dn">worse</span>':'flat');
+  var pc=pctChg(T2,T1);
+  document.getElementById('expVoice').innerHTML='<b>'+m.name+':</b> Tue 23 '+m.ft(T2)+' vs Tue 16 '+m.ft(T1)+' ('+(pc>=0?'+':'')+pc.toFixed(1)+'%, '+word+'). Peak on 6/23 at <b>'+HOURS[pkh]+'</b> ('+m.ft(pk)+').';
+}
+drawExplorer(0);
+
+/* ===== 03 ROAS CHART ===== */
+(function(){
+  var r2=hRoas(d2),r1=hRoas(d1);
+  lineChart('roasCanvas',r2,r1,function(v){return v.toFixed(1)+'x';},function(v){return v>0?v.toFixed(2)+'x':'— no spend';});
+  var pk=0,pkh=0;r2.forEach(function(v,h){if(d2.cost[h]>=1000&&v>pk){pk=v;pkh=h;}});
+  document.getElementById('roasVoice').innerHTML='<b>Ad ROAS 2.44x vs 2.98x (<span class="dn">−18%</span>).</b> Best high-volume hour on 6/23: <b>'+HOURS[pkh]+' ('+pk.toFixed(2)+'x)</b>. Morning-matched window (12A–11A) was <span class="dn">2.43x vs 3.02x</span> — efficiency was softer even before the afternoon thinned out.';
+})();
+
+/* ===== 04 FUNNEL ===== */
+(function(){
+  function card(d,tt){
+    var I=sm(d.imp),C=sm(d.clk),P=sm(d.pur),S=sm(d.sal);
+    var ctr=C/I*100,cvr=P/C*100;
+    var stages=[
+      {nm:'Impressions',vl:num(I),w:100,col:d.color},
+      {nm:'Clicks',vl:num(C),w:Math.max(C/I*100,1.5),col:d.color},
+      {nm:'Purchases',vl:num(P),w:Math.max(P/I*100*40,1.5),col:d.color}
+    ];
+    var h='<div class="funnel-card"><h4 style="color:'+d.color+'">'+tt+'</h4>';
+    h+='<div class="fn-stage"><div class="fn-row"><span class="nm">Impressions</span><span class="vl">'+num(I)+'</span></div><div class="fn-bar"><span style="width:100%;background:'+d.color+'"></span></div><div class="fn-conv">CTR '+ctr.toFixed(3)+'% ↓</div></div>';
+    h+='<div class="fn-stage"><div class="fn-row"><span class="nm">Clicks</span><span class="vl">'+num(C)+'</span></div><div class="fn-bar"><span style="width:'+Math.max(C/I*100,2)+'%;background:'+d.color+'"></span></div><div class="fn-conv">CVR '+cvr.toFixed(1)+'% ↓</div></div>';
+    h+='<div class="fn-stage"><div class="fn-row"><span class="nm">Purchases</span><span class="vl">'+num(P)+'</span></div><div class="fn-bar"><span style="width:'+Math.max(P/I*100*30,2)+'%;background:'+d.color+'"></span></div><div class="fn-conv">AOV '+money2(S/P)+'</div></div>';
+    h+='<div class="fn-stage" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;"><div class="fn-row"><span class="nm">Ad Sales</span><span class="vl" style="color:'+d.color+'">'+money(S)+'</span></div></div>';
+    h+='</div>';
+    return h;
+  }
+  document.getElementById('funnelGrid').innerHTML=card(d2,'Tue 23 · Prime Day 1')+card(d1,'Tue 16 · last Tuesday');
+  document.getElementById('funnelVoice').innerHTML='<b>The funnel narrowed at every stage day-over-day:</b> impressions <span class="dn">−31.5%</span>, clicks <span class="dn">−34.7%</span>, purchases <span class="dn">−38.4%</span>. Both quality rates also eased — CTR <span class="dn">0.413% vs 0.433%</span> and CVR <span class="dn">16.2% vs 17.2%</span> — typical of deal-day browsing. AOV slipped to <span class="dn">$40.02 (from $42.06)</span>, consistent with promotional pricing.';
+})();
+
+/* ===== 05 TABLE ===== */
+function setTable(key){
+  var d=D[key];var r2=hRoas(d),cpc=hCpc(d),cvr=hCvr(d),ctr=hCtr(d);
+  var head='<thead><tr><th>Hour</th><th>Impr</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>Spend</th><th>Purch</th><th>CVR</th><th>Ad Sales</th><th>ROAS</th><th>NTB</th></tr></thead>';
+  var body='<tbody>';
+  for(var i=0;i<24;i++){
+    var dead=d.cost[i]<10;
+    body+='<tr'+(dead?' class="dead"':'')+'><td>'+HOURS[i]+'</td>'+
+      '<td>'+num(d.imp[i])+'</td>'+
+      '<td>'+num(d.clk[i])+'</td>'+
+      '<td>'+(d.imp[i]>0?ctr[i].toFixed(2)+'%':'—')+'</td>'+
+      '<td>'+(d.clk[i]>0?money2(cpc[i]):'—')+'</td>'+
+      '<td>'+money(d.cost[i])+'</td>'+
+      '<td>'+num(d.pur[i])+'</td>'+
+      '<td>'+(d.clk[i]>0?cvr[i].toFixed(1)+'%':'—')+'</td>'+
+      '<td>'+money(d.sal[i])+'</td>'+
+      '<td>'+(d.cost[i]>10?r2[i].toFixed(2)+'x':'—')+'</td>'+
+      '<td>'+money(d.ntb[i])+'</td></tr>';
+  }
+  body+='</tbody>';
+  var t=key==='d2'?t2:t1;
+  var foot='<tfoot><tr><td>TOTAL</td><td>'+num(t.imp)+'</td><td>'+num(t.clk)+'</td><td>'+t.ctr.toFixed(3)+'%</td><td>'+money2(t.cpc)+'</td><td>'+money(t.cost)+'</td><td>'+num(t.pur)+'</td><td>'+t.cvr.toFixed(1)+'%</td><td>'+money(t.sal)+'</td><td>'+t.roas.toFixed(2)+'x</td><td>'+money(t.ntb)+'</td></tr></tfoot>';
+  document.getElementById('hourTable').innerHTML=head+body+foot;
+  document.getElementById('tabT2').classList.toggle('active',key==='d2');
+  document.getElementById('tabT1').classList.toggle('active',key==='d1');
+}
+setTable('d2');
+
+/* ===== 06 TAKEAWAYS ===== */
+document.getElementById('tkList').innerHTML=[
+  '<strong>Demand was strong all morning, then thinned out.</strong> 12 AM–11 AM ran ahead of last Tuesday on spend (+8%), but from noon onward ad sales were only <span class="dn">$6,244 vs $35,808</span> last Tue. Activity was near-zero after ~3 PM, so roughly <span class="dn">$29.6K of a normal Tuesday afternoon ad-sales window went uncaptured</span>.',
+  '<strong>Efficiency softened even at full tilt.</strong> Ad ROAS <span class="dn">2.44x vs 2.98x (−18%)</span>; in the matched morning window it was <span class="dn">2.43x vs 3.02x</span>. CPC rose to <span class="dn">$2.66 (+10%)</span>, CTR eased to <span class="dn">0.413%</span>, and CVR to <span class="dn">16.2%</span> — deal-day traffic clicked and converted a little worse.',
+  '<strong>The funnel shrank at every stage:</strong> impressions <span class="dn">−31.5%</span>, clicks <span class="dn">−34.7%</span>, purchases <span class="dn">−38.4%</span>, AOV <span class="dn">$40.02 (from $42.06)</span>. The whole SP funnel was smaller and slightly less efficient than a normal Tuesday.',
+  '<strong>The genuine bright spot: new customers.</strong> New-to-brand share of ad sales jumped to <span class="up">14.9% from 10.3% (+44%)</span>, and NTB sales held up far better (<span class="up">−15.7%</span>) than total ad sales (−41%). Prime Day pulled disproportionately more first-time buyers per ad dollar.',
+  '<strong>T-ROAS rose to 5.35x from 4.46x — read it carefully.</strong> T-Sales held near a normal Tuesday (<span class="up">$111,739 vs $130,150</span>) while ad spend fell ~28%, so the ratio climbs because the denominator shrank. <span class="dn">Treat the T-ROAS lift as distorted, not a clean efficiency gain.</span>',
+  '<strong>Peak hours:</strong> impressions and spend peaked late morning (11 AM / 10 AM), purchases at 10 AM (175), ad sales at 9 AM ($7,676), and new-to-brand at 7 AM ($1,380). Best high-volume efficiency was 9 AM (3.04x). The engine ran 5–11 AM.',
+  '<strong>Read caveats:</strong> ad metrics are SP-only (caps apply to SP); T-Sales is total. This is a single-day Tue-vs-Tue comparison — neither day is a federal holiday, so it is a fair read (Juneteenth fell Fri 6/19, not on the compared day).'
+].map(function(t){return '<li>'+t+'</li>';}).join('');
+</script>
+</body>
+</html>
