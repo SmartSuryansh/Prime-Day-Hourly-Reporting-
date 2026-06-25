@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prime Day Reporting — Hourly Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090d;--card:#0e1219;--card2:#11161f;--border:#1a2840;--text:#e4eaf4;--sub:#8da4c2;--dim:#4a6585;
+--lime:#a3e635;--cyan:#00d4ff;--gold:#fbbf24;--red:#ef4444;--teal:#2dd4bf;
+--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.page{max-width:1240px;margin:0 auto;padding:32px 22px 80px;}
+.hero{border:1px solid var(--border);background:linear-gradient(135deg,#0c1119,#0a0e15);border-radius:18px;padding:34px 32px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--lime),var(--cyan));}
+.hero-tag{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+h1{font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1.1;}
+h1 em{font-style:normal;color:var(--gold);}
+.hero-dates{font-family:var(--mono);font-size:13px;color:var(--sub);margin-top:14px;}
+.hero-dates b{color:var(--lime);}.hero-dates .prev{color:var(--cyan);}
+.pills{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;}
+.pill{font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);color:var(--sub);background:rgba(255,255,255,0.02);}
+.pill.warn{border-color:rgba(251,191,36,0.4);color:var(--gold);}
+.pill.flag{border-color:rgba(239,68,68,0.35);color:#f7a3a3;}
+.section{margin-top:34px;}
+.sec-head{margin-bottom:18px;}
+.sec-num{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
+.sec-title{font-size:20px;font-weight:600;margin-top:4px;letter-spacing:-0.3px;}
+.sec-sub{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:4px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.kpi-grid{grid-template-columns:1fr;}}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 16px 14px;position:relative;overflow:hidden;}
+.kpi .glow{position:absolute;top:0;left:0;width:46px;height:3px;border-radius:0 0 4px 0;}
+.kpi.hero-kpi{grid-column:span 2;background:linear-gradient(135deg,#0d1620,#0a1015);border-color:rgba(45,212,191,0.3);}
+@media(max-width:520px){.kpi.hero-kpi{grid-column:span 1;}}
+.kpi-label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.kpi-val{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1.1;}
+.kpi.hero-kpi .kpi-val{font-size:30px;}
+.kpi-prev{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400;}
+.kpi-delta{font-family:var(--mono);font-size:11px;margin-top:7px;font-weight:600;}
+.kpi-delta.pos{color:var(--lime);}.kpi-delta.neg{color:var(--red);}.kpi-delta.neu{color:var(--sub);}
+.kpi-note{font-family:var(--sans);font-size:10.5px;color:var(--gold);margin-top:6px;line-height:1.35;}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;}
+.chart-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;}
+.chart-head h3{font-size:14px;font-weight:600;color:#fff;}
+select.metric-sel{font-family:var(--mono);font-size:12px;background:var(--card2);color:var(--lime);border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer;}
+.canvas-wrap{position:relative;width:100%;height:340px;}
+.canvas-wrap.short{height:280px;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+.voice{font-family:var(--sans);font-size:13px;color:var(--sub);margin-top:14px;padding:11px 16px;background:rgba(255,255,255,0.02);border-radius:8px;border-left:3px solid var(--gold);line-height:1.55;}
+.voice b{color:#fff;font-weight:600;}.voice .up{color:var(--lime);font-weight:600;}.voice .dn{color:var(--red);font-weight:600;}
+.funnel-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:760px){.funnel-grid{grid-template-columns:1fr;}}
+.funnel-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.funnel-card h4{font-family:var(--mono);font-size:12px;letter-spacing:1px;margin-bottom:14px;}
+.fn-stage{margin-bottom:12px;}
+.fn-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:4px;}
+.fn-row .nm{color:var(--sub);}.fn-row .vl{color:#fff;font-weight:600;}
+.fn-bar{height:9px;border-radius:5px;background:rgba(255,255,255,0.05);overflow:hidden;}
+.fn-bar span{display:block;height:100%;border-radius:5px;}
+.fn-conv{font-family:var(--mono);font-size:10px;color:var(--gold);text-align:right;margin-top:3px;}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+table.sc{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;min-width:760px;}
+table.sc th{padding:10px 9px;color:var(--dim);font-weight:400;text-align:right;border-bottom:1px solid var(--border);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+table.sc th:first-child{text-align:left;}
+table.sc td{padding:8px 9px;text-align:right;border-bottom:1px solid rgba(26,40,64,0.35);white-space:nowrap;}
+table.sc td:first-child{text-align:left;color:#fff;font-weight:600;}
+table.sc tr:hover td{background:rgba(255,255,255,0.02);}
+table.sc tfoot td{border-top:1px solid var(--border);color:var(--gold);font-weight:700;}
+.tbl-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.tbl-tab{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--sub);cursor:pointer;}
+.tbl-tab.active{color:var(--bg);font-weight:700;}
+.tbl-tab.t2.active{background:var(--lime);border-color:var(--lime);}
+.tbl-tab.t1.active{background:var(--cyan);border-color:var(--cyan);}
+.acct-toggle{display:inline-flex;margin-top:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);}
+.acct-btn{font-family:var(--mono);font-size:12.5px;padding:9px 20px;border:none;background:transparent;color:var(--sub);cursor:pointer;letter-spacing:.5px;}
+.acct-btn.active{background:var(--gold);color:#1a1206;font-weight:700;}
+.acct-btn.disabled,.acct-btn:disabled{opacity:.38;cursor:not-allowed;}
+.ctrl-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:18px;}
+.ctrl-row .acct-toggle{margin-top:0;}
+.dead{color:var(--dim);}
+.takeaways{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:14px;padding:30px;position:relative;overflow:hidden;}
+.takeaways::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--gold),var(--lime));}
+.tk-title{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:18px;}
+.tk-list{list-style:none;display:flex;flex-direction:column;gap:13px;}
+.tk-list li{font-size:14px;color:var(--text);line-height:1.6;padding-left:20px;position:relative;}
+.tk-list li::before{content:'→';position:absolute;left:0;color:var(--cyan);font-weight:700;}
+.tk-list li strong{color:var(--gold);}.tk-list li .up{color:var(--lime);font-weight:600;}.tk-list li .dn{color:var(--red);font-weight:600;}
+.legend{display:flex;gap:18px;font-family:var(--mono);font-size:11px;color:var(--sub);margin-top:8px;}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.foot{margin-top:40px;font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:center;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hero">
+  <div class="hero-tag" id="heroTag">SmartSign USA · Seller Central · Sponsored Ads (SP + SB + SD) + Total Sales</div>
+  <h1>Prime Day Reporting — <em>Hourly Analysis</em></h1>
+  <div class="hero-dates" id="heroDates"></div>
+  <div class="ctrl-row">
+    <div class="acct-toggle">
+      <button class="acct-btn active" id="accSC" onclick="setAccount('sc')">Seller Central</button>
+      <button class="acct-btn" id="accVC" onclick="setAccount('vc')">Vendor Central</button>
+    </div>
+    <select class="metric-sel" id="daySel"></select>
+  </div>
+  <div class="pills" id="pills"></div>
+</div>
+
+<!-- 01 SCORECARD -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">01 — Scorecard</div>
+    <div class="sec-title">Full-day totals · 6/23 vs 6/16</div>
+    <div class="sec-sub">Arrow = direction of change · Colour = good (green) / bad (red), per metric</div>
+  </div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+</div>
+
+<!-- 02 METRIC EXPLORER -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">02 — Hourly Metric Explorer</div>
+    <div class="sec-title">Pick any metric · 6/23 vs 6/16, hour by hour</div>
+  </div>
+  <div class="panel">
+    <div class="chart-head">
+      <h3 id="expTitle"></h3>
+      <select class="metric-sel" id="metricSel"></select>
+    </div>
+    <div class="canvas-wrap"><canvas id="expCanvas"></canvas></div>
+    <div class="legend"><span><i style="background:#a3e635"></i><span class="lg2"></span></span><span><i style="background:#00d4ff"></i><span class="lg1"></span></span></div>
+    <div class="voice" id="expVoice"></div>
+  </div>
+</div>
+
+<!-- 03 ROAS -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">03 — Hourly Ad ROAS</div>
+    <div class="sec-title">Ad Sales ÷ Ad Spend, per hour</div>
+    <div class="sec-sub">Hours with spend under $10 shown as no-data</div>
+  </div>
+  <div class="panel">
+    <div class="canvas-wrap short"><canvas id="roasCanvas"></canvas></div>
+    <div class="legend"><span><i style="background:#a3e635"></i><span class="lg2"></span></span><span><i style="background:#00d4ff"></i><span class="lg1"></span></span></div>
+    <div class="voice" id="roasVoice"></div>
+  </div>
+</div>
+
+<!-- 04 FUNNEL -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">04 — Conversion Funnel</div>
+    <div class="sec-title">Impressions → Clicks → Ad Orders → Ad Sales</div>
+    <div class="sec-sub">Bars scaled within each day · CTR and CVR shown between stages</div>
+  </div>
+  <div class="funnel-grid" id="funnelGrid"></div>
+  <div class="voice" id="funnelVoice"></div>
+</div>
+
+<!-- 05 TABLE -->
+<div class="section">
+  <div class="sec-head">
+    <div class="sec-num">05 — Full Hourly Breakdown</div>
+    <div class="sec-title">Every metric, every hour</div>
+  </div>
+  <div class="panel">
+    <div class="tbl-tabs">
+      <button class="tbl-tab t2 active" id="tabT2" onclick="setTable('d2')">Tue 23 (PD1)</button>
+      <button class="tbl-tab t1" id="tabT1" onclick="setTable('d1')">Tue 16 (prev)</button>
+    </div>
+    <div class="tbl-wrap"><table class="sc" id="hourTable"></table></div>
+  </div>
+</div>
+
+<!-- 06 TAKEAWAYS -->
+<div class="section">
+  <div class="takeaways">
+    <div class="tk-title">What it says</div>
+    <ul class="tk-list" id="tkList"></ul>
+  </div>
+</div>
+
+<div class="foot">
+  Prime Day Reporting — Hourly Analysis · Prime Day 1 (23/16 Jun) & Prime Day 2 (24/17 Jun) · Seller Central / Vendor Central.<br>
+  Ad ROAS = Ad Sales ÷ Ad Spend · T-ROAS = T-Sales ÷ Ad Spend (where T-Sales available). Ad metrics cover all sponsored ads (SP + SB + SD). T-Sales cross-checked to Compare Sales snapshot.
+</div>
+
+</div>
+<script>
+var HOURS=['12 AM','1 AM','2 AM','3 AM','4 AM','5 AM','6 AM','7 AM','8 AM','9 AM','10 AM','11 AM','12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM','8 PM','9 PM','10 PM','11 PM'];
+var ACCOUNTS_META={
+ sc:{label:'Seller Central',base:'SmartSign USA · Seller Central · Sponsored Ads (SP + SB + SD)'},
+ vc:{label:'Vendor Central',base:'SmartSign USA · Vendor Central · Sponsored Ads (SP + SB + SD)'}
+};
+var DAY_ORDER=['pd1','pd2'];
+var DAYS={
+ pd1:{name:'Prime Day 1 · Tue 23 vs Tue 16',wd:'Tue',d2label:'Tue 23 (PD1)',d1label:'Tue 16 (prev)',d2short:'Tue 23',d1short:'Tue 16',d2title:'Tue 23 · Prime Day 1',d1title:'Tue 16 · last Tuesday',dateLine:'<b>Tue 23 Jun 2026 · Prime Day 1</b> &nbsp;vs&nbsp; <span class="prev">Tue 16 Jun · last Tuesday</span> &nbsp;·&nbsp; Hourly, 12 AM – 11 PM',
+   sc:{d2:{ts:111739,imp:[17668,21652,27246,47084,83704,128619,178770,207347,226073,227002,235543,235586,157990,40731,36734,17137,3608,3720,4100,2077,0,0,0,0],clk:[54,104,113,169,323,502,766,818,905,939,981,941,642,254,209,113,9,7,9,6,0,0,0,0],cost:[90,238,250,444,777,1482,2226,2506,2660,2524,2732,2438,1654,387,309,150,10,9,11,7,0,0,0,0],pur:[5,13,9,19,36,105,119,143,147,156,175,152,112,36,21,24,0,0,1,0,0,0,0,0],sal:[140,231,317,836,1397,3749,4597,6872,6316,7676,7115,5458,4089,1213,453,471,0,0,18,0,0,0,0,0],ntb:[13,142,157,341,158,181,549,1380,774,462,733,762,684,713,228,289,0,0,0,0,0,0,0,0]},d1:{ts:130150,imp:[16340,16186,22213,39854,69987,112371,144816,179132,189715,198142,220796,228196,235119,212585,193481,173060,162318,148857,93606,40335,31528,23216,17310,9714],clk:[51,81,109,179,275,470,626,763,781,864,969,1003,1027,881,826,785,721,647,398,192,158,101,77,50],cost:[113,172,218,375,667,1328,1762,2235,2349,2402,2750,2569,2651,2189,1846,1650,1351,1126,695,253,188,135,89,44],pur:[6,3,6,17,42,93,99,168,170,180,213,196,188,191,94,130,103,74,38,17,14,11,11,3],sal:[169,71,145,532,1390,3570,4616,8312,6511,8046,9581,8184,7689,8343,5294,4019,5365,2000,1435,479,454,349,324,57],ntb:[0,0,0,0,25,81,294,735,826,760,424,517,687,788,346,722,607,402,326,444,431,349,154,57]}},
+   vc:{d2:{imp:[3707,3135,4288,7737,11794,17044,18505,15613,15636,11211,9529,9984,11373,10703,7500,6276,4836,4312,4208,1655,0,0,0,0],clk:[8,15,26,41,45,65,105,95,80,67,39,55,52,52,25,25,12,16,14,6,0,0,0,0],cost:[15,55,77,132,86,214,329,253,190,177,114,126,140,115,57,60,21,23,33,4,0,0,0,0],pur:[1,0,2,5,3,18,34,30,20,18,13,17,23,14,6,3,2,1,2,0,1,0,0,0],sal:[25,0,47,159,132,806,1983,904,508,514,400,536,638,306,69,48,21,13,95,0,40,0,0,0]},d1:{imp:[1588,2663,3748,5781,9753,13408,15282,16319,15684,10470,10594,9281,8820,7002,5372,4990,4304,3408,3419,3069,2357,1645,1290,894],clk:[7,12,27,26,36,62,82,82,96,57,57,60,41,25,19,27,15,14,12,14,9,6,10,0],cost:[19,20,93,71,82,230,256,230,235,134,138,139,100,54,56,69,30,38,16,18,12,8,12,0],pur:[0,0,3,6,6,29,24,22,42,22,22,19,19,9,6,11,4,1,4,1,1,0,0,0],sal:[0,0,77,263,655,2063,1069,1174,1454,793,1369,443,386,233,110,448,64,60,388,7,8,0,0,0]}}},
+ pd2:{name:'Prime Day 2 · Wed 24 vs Wed 17',wd:'Wed',d2label:'Wed 24 (PD2)',d1label:'Wed 17 (prev)',d2short:'Wed 24',d1short:'Wed 17',d2title:'Wed 24 · Prime Day 2',d1title:'Wed 17 · last Wednesday',dateLine:'<b>Wed 24 Jun 2026 · Prime Day 2</b> &nbsp;vs&nbsp; <span class="prev">Wed 17 Jun · last Wednesday</span> &nbsp;·&nbsp; Hourly, 12 AM – 11 PM',
+   sc:{d2:{ts:124302,imp:[16383,21718,27418,43879,84605,126768,164918,165281,174601,161186,162233,181064,181695,172001,34644,108845,130264,26483,28326,25071,20536,13655,9114,2563],clk:[77,90,114,195,321,513,642,683,728,693,674,730,804,691,117,410,565,62,73,71,52,27,21,12],cost:[133,202,286,494,900,1375,2270,2277,2229,2090,1948,2153,2266,1814,227,946,1205,103,96,85,68,37,27,11],pur:[5,4,11,20,51,73,109,146,140,156,126,144,142,109,19,48,82,3,4,3,2,1,1,0],sal:[135,61,297,555,2181,3489,5341,11204,6883,7004,5647,7064,7124,4750,719,1780,2001,112,118,71,25,107,25,0],ntb:[68,17,0,107,510,342,355,127,245,419,37,562,214,68,358,103,25,30,118,71,25,0,25,0]},d1:{ts:131996,imp:[22067,24000,28909,40192,81003,147130,187940,211251,209538,209437,223128,225195,224525,212879,185271,168658,161565,151417,148416,135151,113067,75294,49211,34498],clk:[83,108,129,193,349,614,731,907,832,872,977,930,945,838,830,752,733,715,536,561,474,350,218,167],cost:[163,275,243,450,876,1580,2119,2592,2260,2216,2424,2429,2448,2034,1838,1589,1428,1294,978,916,809,575,337,268],pur:[3,13,5,26,53,75,155,195,172,159,194,218,172,167,147,118,99,94,54,58,47,39,28,16],sal:[134,518,152,740,1728,3127,7429,7214,7392,7092,6858,6929,8157,6379,5775,3906,2868,2562,1387,1498,2017,1663,732,450],ntb:[0,0,11,91,243,240,570,1135,1096,549,1347,1115,663,1511,863,730,494,461,183,173,157,175,343,28]}},
+   vc:{d2:{imp:[3495,3943,9569,11491,14356,17967,20300,21163,20557,18081,15831,16111,14178,12731,13899,10077,9937,8816,8909,7561,5967,4563,3242,919],clk:[15,19,37,40,75,73,92,95,105,69,69,67,68,54,50,49,46,43,29,31,14,14,10,2],cost:[33,29,120,90,175,201,275,286,224,177,169,145,157,121,93,86,74,63,43,55,22,32,15,4],pur:[1,2,5,10,10,17,18,19,24,32,20,16,7,16,7,5,3,5,2,2,0,4,2,1],sal:[63,17,355,657,4819,774,943,509,664,1346,700,637,295,421,165,281,65,216,49,42,0,163,59,17],ntb:[0,0,0,27.52,31.43,36.82,26.32,66.66,86.82,131.12,116.92,182.85,70.05,156.89,0,33.38,0,48.84,0,0,0,125.41,0,0]},d1:{imp:[2398,3448,5027,9094,14528,25047,17630,20154,17298,13924,14308,14048,12476,10818,8472,7006,6486,6532,6086,5620,4228,3064,2125,1395],clk:[4,15,24,52,68,117,85,107,81,66,63,57,50,40,29,28,23,24,27,28,10,11,7,2],cost:[17,42,53,76,226,271,234,301,192,140,134,116,125,103,59,64,38,38,49,48,16,22,14,4],pur:[2,1,4,7,13,21,28,51,35,23,19,18,26,9,7,6,4,5,7,3,2,0,0,3],sal:[25,22,53,183,398,604,773,2172,2073,650,469,839,868,423,184,265,131,76,216,139,49,0,0,39],ntb:[0,0,0,0,0,52.64,16.13,106.42,103.42,42.97,42.12,78.2,59.4,0,0,20.58,7.56,23.11,76.01,0,48.96,0,0,0]}}}
+};
+
+/* ===== HELPERS ===== */
+function sm(a){return a.reduce(function(x,y){return x+y;},0);}
+function money(v){return '$'+Math.round(v).toLocaleString();}
+function money2(v){return '$'+v.toFixed(2);}
+function num(v){return Math.round(v).toLocaleString();}
+function pctv(v){return v.toFixed(1)+'%';}
+function pctv2(v){return v.toFixed(2)+'%';}
+function roasv(v){return v.toFixed(2)+'x';}
+function pctChg(c,p){return p?((c-p)/p*100):0;}
+function sg(p){return (p>=0?'+':'')+p.toFixed(1)+'%';}
+function goodCls(cur,prev,good){if(!prev)return'neu';var up=cur>=prev;var isGood=good==='up'?up:!up;return isGood?'pos':'neg';}
+function arrow(cur,prev){return cur>=prev?'▲':'▼';}
+function cw(cur,prev,good){var c=goodCls(cur,prev,good);return c==='pos'?'up':(c==='neg'?'dn':'');}
+function pctSpan(cur,prev,good){return '<span class="'+cw(cur,prev,good)+'">'+sg(pctChg(cur,prev))+'</span>';}
+function valSpan(cur,prev,good,fmt){return '<span class="'+cw(cur,prev,good)+'">'+fmt(cur)+' vs '+fmt(prev)+'</span>';}
+function hRoas(d){return d.cost.map(function(c,i){return c>10?d.sal[i]/c:0;});}
+function hCpc(d){return d.cost.map(function(c,i){return d.clk[i]>0?c/d.clk[i]:0;});}
+function hCvr(d){return d.pur.map(function(p,i){return d.clk[i]>0?p/d.clk[i]*100:0;});}
+function hCtr(d){return d.clk.map(function(c,i){return d.imp[i]>0?c/d.imp[i]*100:0;});}
+function amSales(d){return sm(d.sal.slice(0,12));}
+function amSpend(d){return sm(d.cost.slice(0,12));}
+function pmSales(d){return sm(d.sal.slice(12));}
+function argmax(a){var mi=0;for(var i=1;i<a.length;i++){if(a[i]>a[mi])mi=i;}return mi;}
+function tailHour(d){var li=0;for(var i=0;i<24;i++){if(d.cost[i]>=50)li=i;}return HOURS[li];}
+function bestRoasHour(d){var r=hRoas(d),thr=Math.max(50,sm(d.cost)*0.03),bi=-1,bv=0;for(var i=0;i<24;i++){if(d.cost[i]>=thr&&r[i]>bv){bv=r[i];bi=i;}}return {h:bi<0?'—':HOURS[bi],v:bv};}
+
+/* ===== STATE ===== */
+var DAY='pd2',ACC='sc',d1,d2,t1,t2,HAS_TS,HAS_NTB,tableKey='d2',curMetric=0,SHORT2,SHORT1,TITLE2,TITLE1;
+function dayHasVC(day){return !!DAYS[day].vc;}
+function T(d){var I=sm(d.imp),C=sm(d.clk),Co=sm(d.cost),P=sm(d.pur),S=sm(d.sal);
+  var o={imp:I,clk:C,cost:Co,pur:P,sal:S,ctr:C/I*100,cpc:Co/C,cvr:P/C*100,aov:S/P,roas:S/Co};
+  if(HAS_TS){o.ts=d.ts;o.troas=d.ts/Co;}
+  if(HAS_NTB){var N=sm(d.ntb);o.ntb=N;o.ntbp=N/S*100;}
+  return o;}
+function setDay(v){DAY=v;tableKey='d2';curMetric=0;if(!dayHasVC(v)&&ACC==='vc')ACC='sc';render();}
+function setAccount(a){if(a==='vc'&&!dayHasVC(DAY))return;ACC=a;tableKey='d2';curMetric=0;render();}
+function updateControls(){
+  document.getElementById('accSC').classList.toggle('active',ACC==='sc');
+  var vcb=document.getElementById('accVC');vcb.classList.toggle('active',ACC==='vc');
+  var noVC=!dayHasVC(DAY);vcb.disabled=noVC;vcb.classList.toggle('disabled',noVC);
+  vcb.title=noVC?'Vendor Central data not available for this day':'';
+  document.getElementById('daySel').value=DAY;}
+function setLegends(l2,l1){var a=document.querySelectorAll('.lg2');for(var i=0;i<a.length;i++)a[i].textContent=l2;var b=document.querySelectorAll('.lg1');for(var j=0;j<b.length;j++)b[j].textContent=l1;}
+function render(){
+  var day=DAYS[DAY],accData=day[ACC];if(!accData){ACC='sc';accData=day.sc;}
+  d2=accData.d2;d1=accData.d1;d2.color='#a3e635';d1.color='#00d4ff';
+  HAS_TS=(d2.ts!==undefined&&d2.ts!==null);HAS_NTB=Object.prototype.toString.call(d2.ntb)==='[object Array]';
+  t1=T(d1);t2=T(d2);
+  SHORT2=day.d2short;SHORT1=day.d1short;TITLE2=day.d2title;TITLE1=day.d1title;
+  var meta=ACCOUNTS_META[ACC];
+  document.getElementById('heroTag').textContent=meta.base+(HAS_TS?' + Total Sales':'');
+  document.getElementById('heroDates').innerHTML=day.dateLine;
+  document.getElementById('tabT2').textContent=day.d2label;
+  document.getElementById('tabT1').textContent=day.d1label;
+  setLegends(day.d2label,day.d1label);
+  buildPills(day);buildScorecard();buildMetricDropdown();drawExplorer(curMetric);drawRoas();buildFunnel();setTable(tableKey);buildTakeaways(day);updateControls();}
+
+/* ===== PILLS ===== */
+function buildPills(day){var p=['<span class="pill">Ad metrics = all sponsored ads (SP + SB + SD)</span>'];
+  if(HAS_TS)p.push('<span class="pill">T-Sales = total business sales</span>');
+  else p.push('<span class="pill warn">T-Sales not available for this view — no T-ROAS</span>');
+  p.push('<span class="pill warn">Single-day '+day.wd+'-vs-'+day.wd+' read</span>');
+  document.getElementById('pills').innerHTML=p.join('');}
+
+/* ===== 01 SCORECARD ===== */
+function buildScorecard(){
+  var heroKey=HAS_TS?'ts':'sal';
+  var defs=[
+    {k:'ts',label:'Total Sales (T-Sales)',accent:'--teal',good:'up',fmt:money,need:'ts',note:'Total business sales for the day, all channels.'},
+    {k:'sal',label:'Ad Sales',accent:'--lime',good:'up',fmt:money},
+    {k:'cost',label:'Ad Spend',accent:'--cyan',good:'down',fmt:money},
+    {k:'roas',label:'Ad ROAS',accent:'--gold',good:'up',fmt:roasv},
+    {k:'troas',label:'T-ROAS',accent:'--teal',good:'up',fmt:roasv,need:'ts',note:'Moves mostly with spend — denominator-driven, read alongside Ad ROAS.'},
+    {k:'imp',label:'Impressions',accent:'--cyan',good:'up',fmt:num},
+    {k:'clk',label:'Clicks',accent:'--lime',good:'up',fmt:num},
+    {k:'ctr',label:'CTR',accent:'--gold',good:'up',fmt:pctv2},
+    {k:'cpc',label:'CPC',accent:'--cyan',good:'down',fmt:money2},
+    {k:'pur',label:'Ad Orders',accent:'--lime',good:'up',fmt:num},
+    {k:'cvr',label:'Conversion Rate',accent:'--gold',good:'up',fmt:pctv},
+    {k:'aov',label:'AOV',accent:'--teal',good:'up',fmt:money2},
+    {k:'ntb',label:'New-to-Brand Sales',accent:'--lime',good:'up',fmt:money,need:'ntb'},
+    {k:'ntbp',label:'NTB % of Ad Sales',accent:'--gold',good:'up',fmt:pctv,need:'ntb'}
+  ];
+  var html='';
+  defs.forEach(function(m){
+    if(m.need==='ts'&&!HAS_TS)return; if(m.need==='ntb'&&!HAS_NTB)return;
+    var cur=t2[m.k],prev=t1[m.k],cls=goodCls(cur,prev,m.good),pc=pctChg(cur,prev),hero=(m.k===heroKey);
+    html+='<div class="kpi'+(hero?' hero-kpi':'')+'"><div class="glow" style="background:var('+m.accent+')"></div>'+
+      '<div class="kpi-label">'+m.label+'</div>'+
+      '<div class="kpi-val" style="color:var('+m.accent+')">'+m.fmt(cur)+' <span class="kpi-prev">(prev '+m.fmt(prev)+')</span></div>'+
+      '<div class="kpi-delta '+cls+'">'+arrow(cur,prev)+' '+sg(pc)+' vs last '+DAYS[DAY].wd+'</div>'+
+      (m.note?'<div class="kpi-note">'+m.note+'</div>':'')+'</div>';
+  });
+  document.getElementById('kpiGrid').innerHTML=html;
+}
+
+/* ===== GENERIC DUAL LINE CHART ===== */
+function lineChart(canvasId,a2,a1,fmtY,fmtTip){
+  var cv=document.getElementById(canvasId);if(!cv)return;
+  var dpr=window.devicePixelRatio||1,ctx=cv.getContext('2d'),C2='#a3e635',C1='#00d4ff';
+  function render(){
+    var W=cv.offsetWidth,Ht=cv.offsetHeight;cv.width=W*dpr;cv.height=Ht*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+    var PL=58,PR=16,PT=18,PB=52,pW=W-PL-PR,pH=Ht-PT-PB,n=24;
+    var mx=Math.max.apply(null,a2.concat(a1))*1.12||1;
+    var xp=function(i){return PL+(i/(n-1))*pW;},yp=function(v){return PT+pH-(v/mx)*pH;};
+    ctx.clearRect(0,0,W,Ht);
+    for(var g=0;g<=4;g++){var v=(mx/4)*g,y=yp(v);ctx.strokeStyle='#1a2840';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(PL+pW,y);ctx.stroke();ctx.fillStyle='#4a6585';ctx.font='10px JetBrains Mono';ctx.textAlign='right';ctx.fillText(fmtY(v),PL-7,y+4);}
+    [[a1,C1,true],[a2,C2,false]].forEach(function(d){
+      var arr=d[0],col=d[1],dash=d[2];
+      ctx.beginPath();ctx.moveTo(xp(0),yp(arr[0]));for(var i=1;i<n;i++)ctx.lineTo(xp(i),yp(arr[i]));ctx.lineTo(xp(n-1),PT+pH);ctx.lineTo(xp(0),PT+pH);ctx.closePath();
+      var gr=ctx.createLinearGradient(0,PT,0,PT+pH);gr.addColorStop(0,col+'2e');gr.addColorStop(1,col+'00');ctx.fillStyle=gr;ctx.fill();
+      ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.setLineDash(dash?[6,4]:[]);ctx.moveTo(xp(0),yp(arr[0]));for(var j=1;j<n;j++)ctx.lineTo(xp(j),yp(arr[j]));ctx.stroke();ctx.setLineDash([]);
+      arr.forEach(function(v2,k){ctx.beginPath();ctx.arc(xp(k),yp(v2),2.4,0,7);ctx.fillStyle=col;ctx.fill();});
+    });
+    for(var i4=0;i4<n;i4+=2){ctx.fillStyle='#4a6585';ctx.font='9px JetBrains Mono';ctx.save();ctx.translate(xp(i4),PT+pH+10);ctx.rotate(-Math.PI/5);ctx.textAlign='right';ctx.fillText(HOURS[i4].replace(' ',''),0,0);ctx.restore();}
+    cv._s={W:W,Ht:Ht,PL:PL,pW:pW,PT:PT,pH:pH,mx:mx};
+  }
+  render();
+  cv.onmousemove=function(e){var s=cv._s;if(!s)return;var r=cv.getBoundingClientRect(),mx2=e.clientX-r.left,my=e.clientY-r.top;
+    if(mx2<s.PL||mx2>s.PL+s.pW||my<s.PT||my>s.PT+s.pH){render();return;}
+    var idx=Math.round(Math.max(0,Math.min(23,(mx2-s.PL)/s.pW*23)));render();
+    var x=s.PL+(idx/23)*s.pW;ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(x,s.PT);ctx.lineTo(x,s.PT+s.pH);ctx.stroke();ctx.setLineDash([]);
+    var lines=[HOURS[idx],SHORT2+': '+fmtTip(a2[idx]),SHORT1+': '+fmtTip(a1[idx])];
+    ctx.font='11px JetBrains Mono';var bW=Math.max.apply(null,lines.map(function(l){return ctx.measureText(l).width;}))+26,bH=lines.length*20+12;
+    var bx=x+12,by=Math.max(s.PT,my-bH/2);if(bx+bW>s.W-8)bx=x-bW-12;
+    ctx.fillStyle='#131a24';ctx.strokeStyle='#1a2840';ctx.lineWidth=1;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(bx,by,bW,bH,6);else ctx.rect(bx,by,bW,bH);ctx.fill();ctx.stroke();
+    var cols=['#fff','#a3e635','#00d4ff'];lines.forEach(function(l,i){ctx.fillStyle=cols[i];ctx.font=i===0?'bold 11px JetBrains Mono':'11px JetBrains Mono';ctx.textAlign='left';ctx.fillText(l,bx+13,by+17+i*20);});
+  };
+  cv.onmouseleave=render;window.addEventListener('resize',function(){setTimeout(render,60);});
+}
+
+/* ===== 02 EXPLORER ===== */
+var METRICS=[
+  {key:'sal',name:'Ad Sales ($)',good:'up',get:function(d){return d.sal;},fy:function(v){return v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+Math.round(v);},ft:money},
+  {key:'cost',name:'Ad Spend ($)',good:'down',get:function(d){return d.cost;},fy:function(v){return v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+Math.round(v);},ft:money},
+  {key:'imp',name:'Impressions',good:'up',get:function(d){return d.imp;},fy:function(v){return (v/1000).toFixed(0)+'k';},ft:num},
+  {key:'clk',name:'Clicks',good:'up',get:function(d){return d.clk;},fy:function(v){return Math.round(v);},ft:num},
+  {key:'pur',name:'Ad Orders',good:'up',get:function(d){return d.pur;},fy:function(v){return Math.round(v);},ft:num},
+  {key:'ntb',name:'New-to-Brand Sales ($)',good:'up',need:'ntb',get:function(d){return d.ntb;},fy:function(v){return v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+Math.round(v);},ft:money},
+  {key:'roas',name:'Ad ROAS (x)',good:'up',tot:function(t){return t.roas;},get:hRoas,fy:function(v){return v.toFixed(1)+'x';},ft:roasv},
+  {key:'cvr',name:'Conversion Rate (%)',good:'up',tot:function(t){return t.cvr;},get:hCvr,fy:function(v){return v.toFixed(0)+'%';},ft:pctv},
+  {key:'cpc',name:'CPC ($)',good:'down',tot:function(t){return t.cpc;},get:hCpc,fy:function(v){return '$'+v.toFixed(1);},ft:money2},
+  {key:'ctr',name:'CTR (%)',good:'up',tot:function(t){return t.ctr;},get:hCtr,fy:function(v){return v.toFixed(2)+'%';},ft:pctv2}
+];
+function buildMetricDropdown(){var sel=document.getElementById('metricSel');sel.innerHTML='';
+  METRICS.forEach(function(m,i){if(m.need==='ntb'&&!HAS_NTB)return;var o=document.createElement('option');o.value=i;o.textContent=m.name;sel.appendChild(o);});
+  sel.value=curMetric;sel.onchange=function(){curMetric=+this.value;drawExplorer(curMetric);};}
+function drawExplorer(i){var m=METRICS[i];if(!m){curMetric=0;m=METRICS[0];}var a2=m.get(d2),a1=m.get(d1);
+  document.getElementById('expTitle').textContent=m.name+' · hourly';
+  lineChart('expCanvas',a2,a1,m.fy,m.ft);
+  var T2=m.tot?m.tot(t2):sm(a2),T1=m.tot?m.tot(t1):sm(a1),pk=argmax(a2),cls=goodCls(T2,T1,m.good);
+  var word=cls==='pos'?'<span class="up">better</span>':(cls==='neg'?'<span class="dn">worse</span>':'flat');
+  document.getElementById('expVoice').innerHTML='<b>'+m.name+':</b> '+SHORT2+' '+m.ft(T2)+' vs '+SHORT1+' '+m.ft(T1)+' ('+sg(pctChg(T2,T1))+', '+word+'). Peak on '+SHORT2+' at <b>'+HOURS[pk]+'</b> ('+m.ft(a2[pk])+').';}
+
+/* ===== 03 ROAS ===== */
+function drawRoas(){var r2=hRoas(d2),r1=hRoas(d1);
+  lineChart('roasCanvas',r2,r1,function(v){return v.toFixed(1)+'x';},function(v){return v>0?v.toFixed(2)+'x':'— no spend';});
+  var br=bestRoasHour(d2),am2=amSales(d2)/amSpend(d2),am1=amSales(d1)/amSpend(d1),good=t2.roas>=t1.roas;
+  document.getElementById('roasVoice').innerHTML='<b>Ad ROAS '+t2.roas.toFixed(2)+'x vs '+t1.roas.toFixed(2)+'x ('+sg(pctChg(t2.roas,t1.roas))+', '+(good?'<span class="up">better</span>':'<span class="dn">worse</span>')+').</b> Best high-volume hour on '+SHORT2+': <b>'+br.h+' ('+br.v.toFixed(2)+'x)</b>. Morning-matched window (12A–11A): <span class="'+(am2>=am1?'up':'dn')+'">'+am2.toFixed(2)+'x vs '+am1.toFixed(2)+'x</span>.';}
+
+/* ===== 04 FUNNEL ===== */
+function buildFunnel(){
+  function card(d,tt){var I=sm(d.imp),C=sm(d.clk),P=sm(d.pur),S=sm(d.sal),ctr=C/I*100,cvr=P/C*100;
+    var h='<div class="funnel-card"><h4 style="color:'+d.color+'">'+tt+'</h4>';
+    h+='<div class="fn-stage"><div class="fn-row"><span class="nm">Impressions</span><span class="vl">'+num(I)+'</span></div><div class="fn-bar"><span style="width:100%;background:'+d.color+'"></span></div><div class="fn-conv">CTR '+ctr.toFixed(3)+'% ↓</div></div>';
+    h+='<div class="fn-stage"><div class="fn-row"><span class="nm">Clicks</span><span class="vl">'+num(C)+'</span></div><div class="fn-bar"><span style="width:'+Math.max(C/I*100,2)+'%;background:'+d.color+'"></span></div><div class="fn-conv">CVR '+cvr.toFixed(1)+'% ↓</div></div>';
+    h+='<div class="fn-stage"><div class="fn-row"><span class="nm">Ad Orders</span><span class="vl">'+num(P)+'</span></div><div class="fn-bar"><span style="width:'+Math.max(P/I*100*30,2)+'%;background:'+d.color+'"></span></div><div class="fn-conv">AOV '+money2(S/P)+'</div></div>';
+    h+='<div class="fn-stage" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;"><div class="fn-row"><span class="nm">Ad Sales</span><span class="vl" style="color:'+d.color+'">'+money(S)+'</span></div></div></div>';return h;}
+  document.getElementById('funnelGrid').innerHTML=card(d2,TITLE2)+card(d1,TITLE1);
+  var topGrew=t2.imp>=t1.imp&&t2.clk>=t1.clk;
+  document.getElementById('funnelVoice').innerHTML='<b>'+(topGrew?'Traffic grew at the top of the funnel but converted worse:':'The funnel narrowed at every stage day-over-day:')+'</b> impressions '+pctSpan(t2.imp,t1.imp,'up')+', clicks '+pctSpan(t2.clk,t1.clk,'up')+', ad orders '+pctSpan(t2.pur,t1.pur,'up')+'. Quality rates: CTR '+valSpan(t2.ctr,t1.ctr,'up',pctv2)+', CVR '+valSpan(t2.cvr,t1.cvr,'up',pctv)+', AOV '+valSpan(t2.aov,t1.aov,'up',money2)+'.';}
+
+/* ===== 05 TABLE ===== */
+function setTable(key){tableKey=key;var d=(key==='d2')?d2:d1,t=(key==='d2')?t2:t1,r=hRoas(d),cpc=hCpc(d),cvr=hCvr(d),ctr=hCtr(d);
+  var head='<thead><tr><th>Hour</th><th>Impr</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>Spend</th><th>Ad Ord</th><th>CVR</th><th>Ad Sales</th><th>ROAS</th>'+(HAS_NTB?'<th>NTB</th>':'')+'</tr></thead>';
+  var body='<tbody>';
+  for(var i=0;i<24;i++){var dead=d.cost[i]<10;
+    body+='<tr'+(dead?' class="dead"':'')+'><td>'+HOURS[i]+'</td><td>'+num(d.imp[i])+'</td><td>'+num(d.clk[i])+'</td>'+
+      '<td>'+(d.imp[i]>0?ctr[i].toFixed(2)+'%':'—')+'</td><td>'+(d.clk[i]>0?money2(cpc[i]):'—')+'</td><td>'+money(d.cost[i])+'</td>'+
+      '<td>'+num(d.pur[i])+'</td><td>'+(d.clk[i]>0?cvr[i].toFixed(1)+'%':'—')+'</td><td>'+money(d.sal[i])+'</td>'+
+      '<td>'+(d.cost[i]>10?r[i].toFixed(2)+'x':'—')+'</td>'+(HAS_NTB?'<td>'+money(d.ntb[i])+'</td>':'')+'</tr>';}
+  body+='</tbody>';
+  var foot='<tfoot><tr><td>TOTAL</td><td>'+num(t.imp)+'</td><td>'+num(t.clk)+'</td><td>'+t.ctr.toFixed(3)+'%</td><td>'+money2(t.cpc)+'</td><td>'+money(t.cost)+'</td><td>'+num(t.pur)+'</td><td>'+t.cvr.toFixed(1)+'%</td><td>'+money(t.sal)+'</td><td>'+t.roas.toFixed(2)+'x</td>'+(HAS_NTB?'<td>'+money(t.ntb)+'</td>':'')+'</tr></tfoot>';
+  document.getElementById('hourTable').innerHTML=head+body+foot;
+  document.getElementById('tabT2').classList.toggle('active',key==='d2');
+  document.getElementById('tabT1').classList.toggle('active',key==='d1');}
+
+/* ===== 06 TAKEAWAYS ===== */
+function buildTakeaways(day){
+  var li=[],wd=day.wd;
+  var amS2=amSales(d2),amS1=amSales(d1),pmS2=pmSales(d2),pmS1=pmSales(d1);
+  li.push('<strong>The day was front-loaded into the morning.</strong> 12 AM–11 AM did '+money(amS2)+' in ad sales on '+money(amSpend(d2))+' spend ('+sg(pctChg(amSpend(d2),amSpend(d1)))+' vs last '+wd+'). From noon on, ad sales were '+money(pmS2)+' vs '+money(pmS1)+' last '+wd+', and meaningful activity tailed off after ~'+tailHour(d2)+'.');
+  li.push('<strong>Efficiency '+(t2.roas>=t1.roas?'held up.':'softened.')+'</strong> Ad ROAS <span class="'+cw(t2.roas,t1.roas,'up')+'">'+t2.roas.toFixed(2)+'x vs '+t1.roas.toFixed(2)+'x ('+sg(pctChg(t2.roas,t1.roas))+')</span>. CPC '+valSpan(t2.cpc,t1.cpc,'down',money2)+', CTR '+valSpan(t2.ctr,t1.ctr,'up',pctv2)+', CVR '+valSpan(t2.cvr,t1.cvr,'up',pctv)+'.');
+  li.push('<strong>Funnel volumes:</strong> impressions '+pctSpan(t2.imp,t1.imp,'up')+', clicks '+pctSpan(t2.clk,t1.clk,'up')+', ad orders '+pctSpan(t2.pur,t1.pur,'up')+', AOV '+valSpan(t2.aov,t1.aov,'up',money2)+'.');
+  if(HAS_NTB){var nu=t2.ntbp>=t1.ntbp;
+    li.push('<strong>'+(nu?'Bright spot: new customers.':'New-to-brand pulled back.')+'</strong> NTB share of ad sales '+valSpan(t2.ntbp,t1.ntbp,'up',pctv)+', and NTB sales '+pctSpan(t2.ntb,t1.ntb,'up')+(nu?' — a higher share of first-time buyers per ad dollar.':' — fewer first-time buyers per ad dollar than last '+wd+'.'));}
+  if(HAS_TS){
+    li.push('<strong>T-ROAS '+t2.troas.toFixed(2)+'x from '+t1.troas.toFixed(2)+'x — read carefully.</strong> T-Sales '+money(t2.ts)+' vs '+money(t1.ts)+' while ad spend '+sg(pctChg(t2.cost,t1.cost))+'; the ratio moves mostly with spend, so <span class="dn">treat the T-ROAS change as denominator-driven, not a clean efficiency signal.</span>');}
+  var br=bestRoasHour(d2);
+  li.push('<strong>Peak hours:</strong> impressions '+HOURS[argmax(d2.imp)]+', spend '+HOURS[argmax(d2.cost)]+', ad orders '+HOURS[argmax(d2.pur)]+' ('+num(d2.pur[argmax(d2.pur)])+'), ad sales '+HOURS[argmax(d2.sal)]+' ('+money(d2.sal[argmax(d2.sal)])+')'+(HAS_NTB?', NTB '+HOURS[argmax(d2.ntb)]+' ('+money(d2.ntb[argmax(d2.ntb)])+')':'')+'. Best high-volume efficiency '+br.h+' ('+br.v.toFixed(2)+'x).');
+  li.push('<strong>Read caveats:</strong> Ad metrics cover all sponsored ads (SP + SB + SD). '+(HAS_TS?'T-Sales is total business sales.':'T-Sales is not available for this view, so there is no T-ROAS.')+' Single-day '+wd+'-vs-'+wd+' — neither day is a federal holiday (Juneteenth fell Fri 6/19, not on the compared days), so it is a fair read.');
+  document.getElementById('tkList').innerHTML=li.map(function(t){return '<li>'+t+'</li>';}).join('');}
+
+/* ===== INIT ===== */
+(function(){var sel=document.getElementById('daySel');DAY_ORDER.forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=DAYS[k].name;sel.appendChild(o);});sel.value=DAY;sel.onchange=function(){setDay(this.value);};})();
+render();
+
+</script>
+</body>
+</html>
